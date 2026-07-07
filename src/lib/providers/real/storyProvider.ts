@@ -147,17 +147,19 @@ export const realStoryProvider: StoryProvider = {
       system:
         `You design characters for Soup Stack cartoons. Every character must be simple enough for consistent ` +
         `AI image generation: a soft colorful 3D cartoon with clay-like texture, rounded child-friendly shapes. ` +
-        `Design 2-3 characters (one hero, one or two friends) for the given story.`,
+        `Include every named character that actually appears in the story's script/dialogue/logline - do not ` +
+        `drop or merge named characters to hit a small headcount. If the story only implies unnamed roles, ` +
+        `invent 2-3 simple characters (a hero and one or two friends). Never omit a character the story already named.`,
       prompt: `Story:\nTitle: ${story.title}\nLogline: ${story.logline}\nFull script:\n${story.fullScript}`,
       toolName: "generate_character_bible",
-      toolDescription: "Generates the character bible (2-3 characters) for a cartoon story.",
+      toolDescription: "Generates the character bible for a cartoon story, covering every named character.",
       inputSchema: {
         type: "object",
         properties: {
           characters: {
             type: "array",
             minItems: 2,
-            maxItems: 3,
+            maxItems: 6,
             items: {
               type: "object",
               properties: {

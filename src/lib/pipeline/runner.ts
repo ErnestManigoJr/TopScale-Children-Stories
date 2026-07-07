@@ -354,43 +354,47 @@ export async function runPipeline(projectId: string): Promise<void> {
     await ctl.complete("shot_list");
 
     await ctl.start("storyboard");
-    await Promise.all(
-      shotRows.map(async (shotRow, index) => {
-        const panel = await imageProvider.generateStoryboardPanel(
+    // Sequential, not Promise.all: firing every shot's image request at once
+    // hits fal.ai's per-account concurrency limit (observed as a bare
+    // "Forbidden" 403 with no useful detail in the error body).
+    for (let index = 0; index < shotRows.length; index++) {
+      const shotRow = shotRows[index];
+      const panel = await imageProvider.generateStoryboardPanel(
+        projectId,
+        serializeShot(shotRow),
+        index + 1,
+        styleGuideDraft
+      );
+      await db.storyboardPanel.create({
+        data: {
           projectId,
-          serializeShot(shotRow),
-          index + 1,
-          styleGuideDraft
-        );
-        await db.storyboardPanel.create({
-          data: {
-            projectId,
-            panelNumber: panel.panelNumber,
-            shotId: shotRow.id,
-            framing: panel.framing,
-            background: panel.background,
-            characterPlacement: panel.characterPlacement,
-            action: panel.action,
-            expression: panel.expression,
-            notes: panel.notes,
-            imageUrl: panel.imageUrl,
-          },
-        });
-      })
-    );
+          panelNumber: panel.panelNumber,
+          shotId: shotRow.id,
+          framing: panel.framing,
+          background: panel.background,
+          characterPlacement: panel.characterPlacement,
+          action: panel.action,
+          expression: panel.expression,
+          notes: panel.notes,
+          imageUrl: panel.imageUrl,
+        },
+      });
+    }
     await ctl.complete("storyboard");
 
     await ctl.start("character_references");
-    characterRows = await Promise.all(
-      characterRows.map(async (row) => {
-        const { referenceImageUrl } = await imageProvider.generateCharacterReference(
-          projectId,
-          serializeCharacter(row),
-          styleGuideDraft
-        );
-        return db.character.update({ where: { id: row.id }, data: { referenceImageUrl } });
-      })
-    );
+    // Sequential, not Promise.all - see the storyboard stage note above about
+    // fal.ai's concurrency limit.
+    const updatedCharacterRows: CharacterRow[] = [];
+    for (const row of characterRows) {
+      const { referenceImageUrl } = await imageProvider.generateCharacterReference(
+        projectId,
+        serializeCharacter(row),
+        styleGuideDraft
+      );
+      updatedCharacterRows.push(await db.character.update({ where: { id: row.id }, data: { referenceImageUrl } }));
+    }
+    characterRows = updatedCharacterRows;
     const charactersByName = new Map<string, DraftCharacter>(characterRows.map((c) => [c.name, serializeCharacter(c)]));
     shotRows = await Promise.all(
       shotRows.map(async (row) => {
