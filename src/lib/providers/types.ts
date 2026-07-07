@@ -56,15 +56,17 @@ export interface StoryProvider {
 /** Character reference art + storyboard frames (ChatGPT image generation abstraction). */
 export interface ImageProvider {
   generateCharacterReference(
+    projectId: string,
     character: DraftCharacter,
     styleGuide: DraftStyleGuide
   ): Promise<{ referenceImageUrl: string }>;
   generateStoryboardPanel(
+    projectId: string,
     shot: DraftShot,
     panelNumber: number,
     styleGuide: DraftStyleGuide
   ): Promise<DraftStoryboardPanel>;
-  generateThumbnail(projectTitle: string): Promise<string>;
+  generateThumbnail(projectId: string, projectTitle: string): Promise<string>;
 }
 
 export interface RenderJobHandle {
@@ -77,6 +79,7 @@ export interface RenderJobHandle {
 /** Kling abstraction: animates non-speaking / action shots. */
 export interface VideoProvider {
   renderShot(
+    projectId: string,
     shot: DraftShot,
     characterReferenceUrls: string[],
     styleGuide: DraftStyleGuide
@@ -87,6 +90,7 @@ export interface VideoProvider {
 /** HeyGen abstraction: renders shots where a character speaks with lip-sync. */
 export interface LipSyncProvider {
   renderSpeakingShot(
+    projectId: string,
     shot: DraftShot,
     character: DraftCharacter,
     dialogue: string
@@ -110,7 +114,7 @@ export interface FinalExportResult {
 
 /** FFmpeg-based MVP assembly + DaVinci Resolve XML/EDL export for pro finishing. */
 export interface EditorProvider {
-  assembleTimeline(shots: Shot[]): Promise<AssembledTimeline>;
+  assembleTimeline(projectId: string, shots: Shot[]): Promise<AssembledTimeline>;
   exportFinalVideo(projectId: string, timeline: AssembledTimeline): Promise<FinalExportResult>;
 }
 

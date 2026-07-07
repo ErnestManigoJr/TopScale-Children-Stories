@@ -6,10 +6,10 @@
 
 import type { LipSyncProvider, RenderJobHandle } from "@/lib/providers/types";
 import { delay, mockPlaceholderVideo } from "@/lib/providers/mock/shared";
-import { readJob, registerJob } from "@/lib/providers/mock/jobStore";
+import { readJob, registerJob } from "@/lib/providers/jobStore";
 
 export const mockLipSyncProvider: LipSyncProvider = {
-  async renderSpeakingShot(shot, character, dialogue) {
+  async renderSpeakingShot(_projectId, shot, character, dialogue) {
     await delay(500);
     const outputUrl = mockPlaceholderVideo(`shot-${shot.shotNumber}-heygen-${character.name}`);
     const jobId = registerJob("heygen", { status: "completed", outputUrl, progress: 100 });

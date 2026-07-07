@@ -10,7 +10,7 @@ import { delay, mockPlaceholderVideo } from "@/lib/providers/mock/shared";
 import { formatSecondsAsDuration, parseTimestampToSeconds } from "@/lib/time";
 
 export const mockEditorProvider: EditorProvider = {
-  async assembleTimeline(shots: Shot[]): Promise<AssembledTimeline> {
+  async assembleTimeline(_projectId: string, shots: Shot[]): Promise<AssembledTimeline> {
     await delay(500);
     const ordered = [...shots].sort((a, b) => a.shotNumber - b.shotNumber);
     const clipOrder = ordered.map((s) => s.renderedClipUrl ?? mockPlaceholderVideo(`shot-${s.shotNumber}-missing`));

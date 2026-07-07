@@ -16,7 +16,7 @@ import type {
 } from "@/lib/types";
 import type { TopazProvider } from "@/lib/providers/types";
 import { delay, mockPlaceholderVideo } from "@/lib/providers/mock/shared";
-import { readJob, registerJob } from "@/lib/providers/mock/jobStore";
+import { readJob, registerJob } from "@/lib/providers/jobStore";
 
 const SOURCE_RESOLUTION = "1280x720";
 const SOURCE_FPS = 24;

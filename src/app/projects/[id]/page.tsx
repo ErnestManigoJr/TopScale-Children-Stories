@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MockVideoPlayer } from "@/components/mock-video-player";
+import { CartoonVideoPlayer } from "@/components/cartoon-video-player";
 import { useProject } from "@/hooks/use-project";
 import { fixGlitchesRequest, regenerateRequest } from "@/lib/api-client";
 
@@ -74,7 +74,7 @@ export default function FinalCartoonPage({ params }: { params: Promise<{ id: str
         )}
       </div>
 
-      <MockVideoPlayer thumbnailUrl={project.thumbnailUrl} title={project.title} />
+      <CartoonVideoPlayer videoUrl={project.finalVideoUrl} thumbnailUrl={project.thumbnailUrl} title={project.title} />
 
       <Card className="rounded-2xl">
         <CardContent className="flex flex-col gap-3 p-5">

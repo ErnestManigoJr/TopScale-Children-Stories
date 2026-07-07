@@ -6,10 +6,10 @@
 
 import type { RenderJobHandle, VideoProvider } from "@/lib/providers/types";
 import { delay, mockPlaceholderVideo } from "@/lib/providers/mock/shared";
-import { readJob, registerJob } from "@/lib/providers/mock/jobStore";
+import { readJob, registerJob } from "@/lib/providers/jobStore";
 
 export const mockVideoProvider: VideoProvider = {
-  async renderShot(shot) {
+  async renderShot(_projectId, shot) {
     await delay(400);
     const outputUrl = mockPlaceholderVideo(`shot-${shot.shotNumber}-kling`);
     const jobId = registerJob("kling", { status: "completed", outputUrl, progress: 100 });

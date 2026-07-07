@@ -155,7 +155,7 @@ async function finalizeCartoon(
 
   await ctl.start("assembly");
   const shotRows = await db.shot.findMany({ where: { projectId }, orderBy: { shotNumber: "asc" } });
-  const timeline: AssembledTimeline = await editorProvider.assembleTimeline(shotRows.map(serializeShot));
+  const timeline: AssembledTimeline = await editorProvider.assembleTimeline(projectId, shotRows.map(serializeShot));
   await db.renderJob.create({
     data: { projectId, provider: "editor", status: "completed", inputPayload: toJson(timeline), outputUrl: null },
   });
@@ -194,7 +194,7 @@ async function finalizeCartoon(
   await ctl.complete("quality_check", needsReview ? "Needs review" : "All checks passed", needsReview);
 
   await ctl.start("export");
-  const thumbnailUrl = await imageProvider.generateThumbnail(projectTitle);
+  const thumbnailUrl = await imageProvider.generateThumbnail(projectId, projectTitle);
   const existingFinalRender = await db.finalRender.findUnique({ where: { projectId } });
   if (existingFinalRender) {
     await db.finalRender.update({
@@ -356,7 +356,12 @@ export async function runPipeline(projectId: string): Promise<void> {
     await ctl.start("storyboard");
     await Promise.all(
       shotRows.map(async (shotRow, index) => {
-        const panel = await imageProvider.generateStoryboardPanel(serializeShot(shotRow), index + 1, styleGuideDraft);
+        const panel = await imageProvider.generateStoryboardPanel(
+          projectId,
+          serializeShot(shotRow),
+          index + 1,
+          styleGuideDraft
+        );
         await db.storyboardPanel.create({
           data: {
             projectId,
@@ -379,6 +384,7 @@ export async function runPipeline(projectId: string): Promise<void> {
     characterRows = await Promise.all(
       characterRows.map(async (row) => {
         const { referenceImageUrl } = await imageProvider.generateCharacterReference(
+          projectId,
           serializeCharacter(row),
           styleGuideDraft
         );
@@ -406,7 +412,7 @@ export async function runPipeline(projectId: string): Promise<void> {
     await ctl.start("kling_render");
     for (const row of shotRows.filter((r) => !r.needsLipSync)) {
       const shot = serializeShot(row);
-      const handle = await videoProvider.renderShot(shot, shot.referenceImageUrls, styleGuideDraft);
+      const handle = await videoProvider.renderShot(projectId, shot, shot.referenceImageUrls, styleGuideDraft);
       await db.renderJob.create({
         data: {
           projectId,
@@ -429,7 +435,12 @@ export async function runPipeline(projectId: string): Promise<void> {
     for (const row of shotRows.filter((r) => r.needsLipSync)) {
       const shot = serializeShot(row);
       const speaker = charactersByName.get(shot.characters[0] ?? "") ?? serializeCharacter(characterRows[0]);
-      const handle = await lipSyncProvider.renderSpeakingShot(shot, speaker, shot.dialogue ?? shot.narration ?? "");
+      const handle = await lipSyncProvider.renderSpeakingShot(
+        projectId,
+        shot,
+        speaker,
+        shot.dialogue ?? shot.narration ?? ""
+      );
       await db.renderJob.create({
         data: {
           projectId,
@@ -494,11 +505,12 @@ export async function fixGlitches(projectId: string): Promise<{ fixedShotCount: 
 
     const handle = shot.needsLipSync
       ? await lipSyncProvider.renderSpeakingShot(
+          projectId,
           shotForRender,
           cast[0] ?? serializeCharacter(project.characters[0]),
           shot.dialogue ?? shot.narration ?? ""
         )
-      : await videoProvider.renderShot(shotForRender, restamped.referenceImageUrls, styleGuideDraft);
+      : await videoProvider.renderShot(projectId, shotForRender, restamped.referenceImageUrls, styleGuideDraft);
 
     await db.renderJob.create({
       data: {

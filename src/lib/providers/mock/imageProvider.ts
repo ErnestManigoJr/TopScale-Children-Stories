@@ -7,12 +7,17 @@ import type { DraftShot, DraftStoryboardPanel, ImageProvider } from "@/lib/provi
 import { delay, mockPlaceholderImage } from "@/lib/providers/mock/shared";
 
 export const mockImageProvider: ImageProvider = {
-  async generateCharacterReference(character) {
+  async generateCharacterReference(_projectId, character) {
     await delay(500);
     return { referenceImageUrl: mockPlaceholderImage(character.name, `${character.name} reference`) };
   },
 
-  async generateStoryboardPanel(shot: DraftShot, panelNumber: number, styleGuide): Promise<DraftStoryboardPanel> {
+  async generateStoryboardPanel(
+    _projectId: string,
+    shot: DraftShot,
+    panelNumber: number,
+    styleGuide
+  ): Promise<DraftStoryboardPanel> {
     await delay(250);
     return {
       panelNumber,
@@ -26,7 +31,7 @@ export const mockImageProvider: ImageProvider = {
     };
   },
 
-  async generateThumbnail(projectTitle: string) {
+  async generateThumbnail(_projectId: string, projectTitle: string) {
     await delay(200);
     return mockPlaceholderImage(projectTitle, projectTitle);
   },
