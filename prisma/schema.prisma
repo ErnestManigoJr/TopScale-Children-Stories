@@ -1,0 +1,166 @@
+// Soup Stack data model.
+// SQLite has no native array/JSON column type, so list/object fields are
+// stored as JSON-encoded strings and parsed via lib/serializers.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id                String   @id @default(cuid())
+  title             String
+  originalUserInput String
+  safeStoryIdea     String
+  ageRange          String
+  lesson            String
+  status            String   @default("draft")
+  runtimeTarget     String   @default("1-2 min")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  pipelineStatus    String   @default("[]")
+  finalVideoUrl     String?
+  thumbnailUrl      String?
+  errorLog          String   @default("[]")
+
+  story            Story?
+  characters       Character[]
+  styleGuide       StyleGuide?
+  shots            Shot[]
+  storyboardPanels StoryboardPanel[]
+  renderJobs       RenderJob[]
+  finalRender      FinalRender?
+}
+
+model Story {
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  logline         String
+  fullScript      String
+  narration       String
+  dialogue        String
+  moral           String
+  runtimeEstimate String
+  safetyNotes     String   @default("[]")
+}
+
+model Character {
+  id                    String  @id @default(cuid())
+  projectId             String
+  project               Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name                  String
+  role                  String
+  personality           String
+  visualDescription     String
+  colorPalette          String  @default("[]")
+  clothing              String
+  faceShape             String
+  expressions           String  @default("[]")
+  movementStyle         String
+  voiceStyle            String
+  catchphrase           String
+  referenceImagePrompts String  @default("{}")
+  referenceImageUrl     String?
+
+  @@index([projectId])
+}
+
+model StyleGuide {
+  id                  String  @id @default(cuid())
+  projectId           String  @unique
+  project             Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  artDirection        String
+  colorPalette        String  @default("[]")
+  lighting            String
+  cameraStyle         String
+  texture             String
+  backgroundRules     String
+  characterRules      String
+  consistencyRules    String
+  negativeStyleRules  String
+}
+
+model Shot {
+  id                 String  @id @default(cuid())
+  projectId          String
+  project            Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  shotNumber         Int
+  timestampStart     String
+  timestampEnd       String
+  duration           String
+  sceneDescription   String
+  characters         String  @default("[]")
+  action             String
+  cameraMovement     String
+  dialogue           String?
+  narration          String?
+  needsLipSync       Boolean @default(false)
+  imagePrompt        String
+  videoPrompt        String
+  negativePrompt     String
+  referenceImageUrls String  @default("[]")
+  renderedClipUrl    String?
+  renderStatus       String  @default("pending")
+  qualityStatus      String  @default("pending")
+  qualityNotes       String  @default("[]")
+
+  storyboardPanel StoryboardPanel?
+  renderJobs      RenderJob[]
+
+  @@index([projectId])
+}
+
+model StoryboardPanel {
+  id                  String  @id @default(cuid())
+  projectId           String
+  project             Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  panelNumber         Int
+  shotId              String  @unique
+  shot                Shot    @relation(fields: [shotId], references: [id], onDelete: Cascade)
+  framing             String
+  background          String
+  characterPlacement  String
+  action              String
+  expression          String
+  notes               String
+  imageUrl            String?
+
+  @@index([projectId])
+}
+
+model RenderJob {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  shotId       String?
+  shot         Shot?    @relation(fields: [shotId], references: [id], onDelete: Cascade)
+  provider     String
+  status       String   @default("queued")
+  inputPayload String   @default("{}")
+  outputUrl    String?
+  error        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([shotId])
+}
+
+model FinalRender {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  videoUrl      String
+  duration      String
+  resolution    String
+  fps           Int
+  status        String   @default("processing")
+  qualityReport String   @default("{}")
+  createdAt     DateTime @default(now())
+}
