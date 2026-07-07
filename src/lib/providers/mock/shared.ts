@@ -60,10 +60,19 @@ export function deriveHeroName(input: string): string {
   return candidate.charAt(0).toUpperCase() + candidate.slice(1).toLowerCase();
 }
 
+const TITLE_TEMPLATES: Array<(hero: string) => string> = [
+  (h) => `${h} and the Big Dream`,
+  (h) => `${h}'s Big Adventure`,
+  (h) => `The Day ${h} Learned to Shine`,
+  (h) => `${h} and the Happy Surprise`,
+];
+
+/** Deliberately never splices raw premise text into the title - the premise
+ * can contain the hero's own name or awkward phrasing, which previously
+ * produced nonsense like "The Barn Who The Barn Talent Show Everyone". */
 export function deriveTitle(heroName: string, safeStoryIdea: string): string {
-  const firstClause = safeStoryIdea.split(/[.!?]/)[0]?.trim() ?? safeStoryIdea;
-  const words = firstClause.split(/\s+/).slice(0, 5).join(" ");
-  return `The ${heroName} Who ${words.charAt(0).toUpperCase() + words.slice(1)}`.slice(0, 60);
+  const index = safeStoryIdea.length % TITLE_TEMPLATES.length;
+  return TITLE_TEMPLATES[index](heroName);
 }
 
 let idCounter = 0;
