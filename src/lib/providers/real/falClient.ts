@@ -34,19 +34,36 @@ export function truncatePrompt(text: string, maxLength = MAX_PROMPT_LENGTH): str
   return (lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).trim();
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function describeFalError(error: unknown): string {
+  const body = (error as { body?: unknown })?.body;
+  const detail = body && typeof body === "object" && "detail" in body ? (body as { detail: unknown }).detail : body;
+  const message = error instanceof Error ? error.message : String(error);
+  return detail ? `${message}: ${JSON.stringify(detail)}` : message;
+}
+
 // fal's client throws with just the HTTP status text (e.g. "Unprocessable
-// Entity") in .message - the actually useful detail lives in .body. Surface
-// it so failures are diagnosable from the pipeline's error log without
-// needing to manually reproduce the call.
-async function withDetailedErrors<T>(call: () => Promise<T>): Promise<T> {
-  try {
-    return await call();
-  } catch (error) {
-    const body = (error as { body?: unknown })?.body;
-    const detail = body && typeof body === "object" && "detail" in body ? (body as { detail: unknown }).detail : body;
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(detail ? `${message}: ${JSON.stringify(detail)}` : message);
+// Entity") in .message - the actually useful detail lives in .body, and
+// transient infra hiccups (observed: fal's Kling backend occasionally
+// failing to fetch a just-generated Flux image, or a one-off 500) are common
+// enough to be worth a few retries rather than failing the whole pipeline
+// run over a blip. Genuinely permanent errors (bad prompt, exhausted
+// balance) just fail fast after burning a couple of retries - the detailed
+// message still explains why.
+async function callFal<T>(call: () => Promise<T>, retries = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await call();
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries) await delay(1500 * attempt);
+    }
   }
+  throw new Error(describeFalError(lastError));
 }
 
 export interface GeneratedImage {
@@ -58,7 +75,7 @@ export interface GeneratedImage {
 /** Generates a still image via FLUX.1 [schnell] (fast, cheap text-to-image). */
 export async function generateImage(prompt: string, aspectRatio: "square" | "landscape" = "square"): Promise<GeneratedImage> {
   ensureConfigured();
-  const result = await withDetailedErrors(() =>
+  const result = await callFal(() =>
     fal.subscribe("fal-ai/flux/schnell", {
       input: {
         prompt: truncatePrompt(prompt),
@@ -91,7 +108,7 @@ export async function generateVideoFromImage(
 ): Promise<GeneratedVideo> {
   ensureConfigured();
   const duration = nearestKlingDuration(targetDurationSeconds);
-  const result = await withDetailedErrors(() =>
+  const result = await callFal(() =>
     fal.subscribe("fal-ai/kling-video/v2.1/standard/image-to-video", {
       input: {
         prompt: truncatePrompt(prompt),
