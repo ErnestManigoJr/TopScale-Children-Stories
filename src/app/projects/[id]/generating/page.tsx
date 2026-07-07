@@ -1,7 +1,9 @@
 "use client";
 
 import { use, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PipelineStageList } from "@/components/pipeline-stage-list";
 import { useProject } from "@/hooks/use-project";
@@ -42,8 +44,17 @@ export default function GeneratingPage({ params }: { params: Promise<{ id: strin
 
       {project.status === "failed" && (
         <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-4 text-sm text-red-700">
-            Something went wrong while generating this cartoon. {project.errorLog[0]}
+          <CardContent className="flex flex-col gap-3 p-4 text-sm text-red-700">
+            <p>Something went wrong while generating this cartoon. {project.errorLog[0]}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="self-start"
+              nativeButton={false}
+              render={<Link href={`/projects/${id}`} />}
+            >
+              View details &amp; Regenerate
+            </Button>
           </CardContent>
         </Card>
       )}
