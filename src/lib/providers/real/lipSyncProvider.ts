@@ -1,21 +1,19 @@
-// Real LipSyncProvider - HeyGen stand-in. Renders an actual MP4 clip with
-// spoken dialogue (via ffmpeg's built-in libflite TTS) instead of a fake
-// placeholder URL. Each character gets a consistent voice across shots.
-// TODO(real-provider): call the HeyGen API with character voice/avatar
-// settings + dialogue text in place of renderCard()/renderClip(), keeping
-// the same return shape.
+// Real LipSyncProvider - HeyGen stand-in. Kling doesn't do true lip-sync, so
+// speaking shots get the same real Kling animation as action shots, with the
+// character's dialogue spoken as TTS audio over it (a voiceover, not
+// frame-accurate lip movement - an honest limitation given no dedicated
+// lip-sync model is wired in yet).
+// TODO(real-provider): swap for the actual HeyGen API for true lip-sync.
 
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { LipSyncProvider } from "@/lib/providers/types";
-import { renderCard } from "@/lib/render/card";
-import { renderClip, voiceForCharacter } from "@/lib/render/clip";
-import { paletteToHex } from "@/lib/render/colors";
+import { generateImage, generateVideoFromImage } from "@/lib/providers/real/falClient";
+import { muxAudioOntoVideo, voiceForCharacter } from "@/lib/render/clip";
+import { downloadFile } from "@/lib/render/download";
 import { projectDir, toPublicUrl } from "@/lib/render/paths";
 import { parseTimestampToSeconds } from "@/lib/time";
 
-// Dialogue lines are authored as `Name: "text"` - strip the label/quotes so
-// only the spoken words reach the TTS engine.
 function stripSpeakerLabel(dialogue: string, name: string): string {
   const prefix = `${name}:`;
   const withoutPrefix = dialogue.startsWith(prefix) ? dialogue.slice(prefix.length).trim() : dialogue;
@@ -24,35 +22,23 @@ function stripSpeakerLabel(dialogue: string, name: string): string {
 
 export const realLipSyncProvider: LipSyncProvider = {
   async renderSpeakingShot(projectId, shot, character, dialogue) {
-    const framesDir = await projectDir(projectId, "frames");
     const clipsDir = await projectDir(projectId, "clips");
-    const framePath = path.join(framesDir, `shot-${shot.shotNumber}.png`);
+    const rawClipPath = path.join(clipsDir, `shot-${shot.shotNumber}-raw.mp4`);
     const clipPath = path.join(clipsDir, `shot-${shot.shotNumber}.mp4`);
 
     const spokenLine = stripSpeakerLabel(dialogue, character.name);
-    const { primary, secondary } = paletteToHex(character.colorPalette, character.name);
+    const sceneImage = await generateImage(shot.imagePrompt, "landscape");
 
-    await renderCard({
-      width: 1920,
-      height: 1080,
-      backgroundHex: primary,
-      panelHex: secondary,
-      title: character.name,
-      subtitle: shot.cameraMovement,
-      body: spokenLine,
-      outPath: framePath,
-    });
+    const plannedDuration = parseTimestampToSeconds(shot.duration) || 6;
+    const animated = await generateVideoFromImage(sceneImage.url, shot.videoPrompt, shot.negativePrompt, plannedDuration);
 
-    const durationSeconds = parseTimestampToSeconds(shot.duration) || 6;
-
-    await renderClip({
-      imagePath: framePath,
+    await downloadFile(animated.url, rawClipPath);
+    await muxAudioOntoVideo({
+      videoPath: rawClipPath,
       outPath: clipPath,
-      durationSeconds,
+      durationSeconds: animated.durationSeconds,
       speechText: spokenLine,
       voice: voiceForCharacter(character.name),
-      width: 1920,
-      height: 1080,
       fps: 30,
     });
 

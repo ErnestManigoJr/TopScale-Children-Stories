@@ -56,6 +56,53 @@ export async function renderClip(spec: ClipSpec): Promise<void> {
   ]);
 }
 
+export interface MuxSpec {
+  videoPath: string;
+  outPath: string;
+  durationSeconds: number;
+  speechText?: string;
+  voice?: string;
+  fps: number;
+}
+
+/** Muxes TTS narration/dialogue (or silence) onto an already-animated video
+ * clip (e.g. a Kling-generated clip), trimmed/padded to match the shot's
+ * planned duration. No zoompan needed here - the source video already has
+ * real motion. */
+export async function muxAudioOntoVideo(spec: MuxSpec): Promise<void> {
+  const { videoPath, outPath, durationSeconds, speechText, voice = "kal", fps } = spec;
+  const clampedDuration = Math.max(1, durationSeconds);
+
+  const audioInput = speechText
+    ? ["-f", "lavfi", "-i", `flite=text='${escapeFilterValue(speechText)}':voice=${voice}`]
+    : ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"];
+
+  await runFfmpeg([
+    "-i",
+    videoPath,
+    ...audioInput,
+    "-filter_complex",
+    "[1:a]apad[a]",
+    "-map",
+    "0:v",
+    "-map",
+    "[a]",
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    "-c:a",
+    "aac",
+    "-t",
+    String(clampedDuration),
+    "-r",
+    String(fps),
+    "-fps_mode",
+    "cfr",
+    outPath,
+  ]);
+}
+
 const VOICES = ["kal", "kal16", "awb", "rms", "slt"];
 
 /** Deterministically picks a consistent flite voice per character name, so
