@@ -14,6 +14,7 @@ import type {
 import {
   buildImagePrompt,
   buildNegativePrompt,
+  buildReferencePrompts,
   buildVideoPrompt,
   DEFAULT_VISUAL_STYLE,
   delay,
@@ -117,18 +118,6 @@ const SOUP_ROCKET_CHARACTERS: DraftCharacter[] = [
   },
 ];
 
-function buildReferencePrompts(character: DraftCharacter) {
-  const base =
-    `${character.name}, ${character.visualDescription}, wearing ${character.clothing}, ` +
-    `color palette: ${character.colorPalette.join(", ")}, clay-like texture`;
-  return {
-    front: `${base}, front view character turnaround, neutral standing pose, ${character.faceShape}, calm friendly expression`,
-    side: `${base}, side profile character turnaround, full silhouette visible`,
-    expressionSheet: `${base}, expression sheet grid showing: ${character.expressions.join(", ")}`,
-    fullBody: `${base}, full body pose, movement style: ${character.movementStyle}`,
-    lineup: `${base}, standing in a friendly character lineup with consistent scale and style`,
-  };
-}
 
 function deriveLesson(heroName: string): string {
   return `${heroName} learns that being kind, warm, and true to yourself is its own kind of superpower.`;

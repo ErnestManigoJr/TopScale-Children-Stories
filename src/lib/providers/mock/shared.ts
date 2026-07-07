@@ -118,3 +118,20 @@ export function buildVideoPrompt(action: string, cast: DraftCharacter[]): string
 export function buildNegativePrompt(): string {
   return KLING_NEGATIVE_STYLE;
 }
+
+/** Builds the five standard reference-art prompts (front/side/expression
+ * sheet/full body/lineup) for a character, reused by every story brain
+ * (mock or real) so image generation always gets the same consistency
+ * language regardless of which one wrote the character bible. */
+export function buildReferencePrompts(character: DraftCharacter) {
+  const base =
+    `${character.name}, ${character.visualDescription}, wearing ${character.clothing}, ` +
+    `color palette: ${character.colorPalette.join(", ")}, clay-like texture`;
+  return {
+    front: `${base}, front view character turnaround, neutral standing pose, ${character.faceShape}, calm friendly expression`,
+    side: `${base}, side profile character turnaround, full silhouette visible`,
+    expressionSheet: `${base}, expression sheet grid showing: ${character.expressions.join(", ")}`,
+    fullBody: `${base}, full body pose, movement style: ${character.movementStyle}`,
+    lineup: `${base}, standing in a friendly character lineup with consistent scale and style`,
+  };
+}
