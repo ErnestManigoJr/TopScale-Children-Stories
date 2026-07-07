@@ -67,12 +67,22 @@ export default function FinalCartoonPage({ params }: { params: Promise<{ id: str
           <h1 className="text-2xl font-semibold">{project.title}</h1>
           <p className="text-sm text-muted-foreground">Runtime: {project.finalRender?.duration ?? project.runtimeTarget}</p>
         </div>
-        {project.status === "needs_review" ? (
+        {project.status === "failed" ? (
+          <Badge className="bg-red-100 text-red-700">Generation failed</Badge>
+        ) : project.status === "needs_review" ? (
           <Badge className="bg-amber-100 text-amber-700">Needs review</Badge>
         ) : (
           <Badge className="bg-green-100 text-green-700">Your cartoon is ready</Badge>
         )}
       </div>
+
+      {project.status === "failed" && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4 text-sm text-red-700">
+            This generation failed{project.errorLog[0] ? `: ${project.errorLog[0]}` : "."} Click Regenerate to try again.
+          </CardContent>
+        </Card>
+      )}
 
       <CartoonVideoPlayer videoUrl={project.finalVideoUrl} thumbnailUrl={project.thumbnailUrl} title={project.title} />
 
@@ -92,9 +102,11 @@ export default function FinalCartoonPage({ params }: { params: Promise<{ id: str
       {note && <p className="text-sm text-muted-foreground">{note}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Button size="lg" nativeButton={false} render={<a href={project.finalVideoUrl ?? "#"} download />}>
-          Download MP4
-        </Button>
+        {project.finalVideoUrl && (
+          <Button size="lg" nativeButton={false} render={<a href={project.finalVideoUrl} download />}>
+            Download MP4
+          </Button>
+        )}
         <Button
           variant="outline"
           size="lg"
