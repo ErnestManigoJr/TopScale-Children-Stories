@@ -33,10 +33,20 @@ export default function ProductionDetailsPage({ params }: { params: Promise<{ id
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" render={<a href={`/api/projects/${id}/export?format=json`} download />}>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<a href={`/api/projects/${id}/export?format=json`} download />}
+          >
             Export packet (JSON)
           </Button>
-          <Button variant="outline" size="sm" render={<a href={`/api/projects/${id}/export?format=markdown`} download />}>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<a href={`/api/projects/${id}/export?format=markdown`} download />}
+          >
             Export packet (Markdown)
           </Button>
         </div>

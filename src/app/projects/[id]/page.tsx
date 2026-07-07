@@ -92,13 +92,23 @@ export default function FinalCartoonPage({ params }: { params: Promise<{ id: str
       {note && <p className="text-sm text-muted-foreground">{note}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Button size="lg" render={<a href={project.finalVideoUrl ?? "#"} download />}>
+        <Button size="lg" nativeButton={false} render={<a href={project.finalVideoUrl ?? "#"} download />}>
           Download MP4
         </Button>
-        <Button variant="outline" size="lg" render={<a href={`/api/projects/${id}/export?format=json`} download />}>
+        <Button
+          variant="outline"
+          size="lg"
+          nativeButton={false}
+          render={<a href={`/api/projects/${id}/export?format=json`} download />}
+        >
           Download production packet
         </Button>
-        <Button variant="outline" size="lg" render={<a href={`/api/projects/${id}/export?format=markdown`} download />}>
+        <Button
+          variant="outline"
+          size="lg"
+          nativeButton={false}
+          render={<a href={`/api/projects/${id}/export?format=markdown`} download />}
+        >
           Export prompts
         </Button>
         <Button variant="outline" size="lg" onClick={handleRegenerate} disabled={busy !== null}>
@@ -109,7 +119,7 @@ export default function FinalCartoonPage({ params }: { params: Promise<{ id: str
             {busy === "fix" ? "Fixing…" : `Fix Glitches (${flaggedShots.length})`}
           </Button>
         )}
-        <Button size="lg" variant="ghost" render={<Link href="/" />}>
+        <Button size="lg" variant="ghost" nativeButton={false} render={<Link href="/" />}>
           Create another cartoon
         </Button>
       </div>
